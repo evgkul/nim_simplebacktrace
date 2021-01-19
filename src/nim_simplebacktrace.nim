@@ -136,7 +136,8 @@ when defined nimStackTraceOverride:
       let data = cast[ptr Val](data)
       echo "BACKTRACE ERROR " & $errnum & ": " & $msg & "\n" 
     for p in programCounters:
-      discard backtrace_state.backtrace_pcinfo(p,cb,e,dataptr)
+      if data.len<maxLength.int:
+        discard backtrace_state.backtrace_pcinfo(p,cb,e,dataptr)
     return data
 
   registerStackTraceOverride getBacktrace
