@@ -11,6 +11,10 @@ import nim_simplebacktrace/backtrace_api
 {.passc:"-g3".}
 {.passl:"-g3".}
 
+template getPrefix():string =
+  instantiationInfo(fullPaths=true).filename.splitFile.dir/"nim_simplebacktrace"
+const prefix = getPrefix()
+
 macro buildBacktrace() =
   var files = @[
     "atomic.c",
@@ -27,7 +31,8 @@ macro buildBacktrace() =
     "mmap.c",
   ]
   result = newStmtList()
-  var cargs = "-I backtrace_utils -DHAVE_CONFIG_H -I. -funwind-tables"
+  let includes = prefix/"backtrace_utils"
+  var cargs = &"-I {includes} -DHAVE_CONFIG_H -I. -funwind-tables"
   block:
     let list_64 = @["alpha", "powerpc64", "powerpc64el", "sparc", "amd64", "arm64", "mips64", "mips64el", "riscv64"]
     let list_32 = @["i386", "powerpc", "mips", "mipsel", "arm"]
@@ -50,7 +55,7 @@ macro buildBacktrace() =
     cargs.add &" -D BACKTRACE_ELF_SIZE={arch}"
     cargs.add &" -D BACKTRACE_XCOFF_SIZE={arch}"
   for file in files:
-    let fpath = "lib/libbacktrace"/file
+    let fpath = prefix/"libbacktrace"/file
     let fpath_lit = newLit fpath
     #echo "LIT ",fpath_lit.treeRepr
     let c = newCall(ident "compile",fpath_lit,newLit cargs)
@@ -63,13 +68,16 @@ buildBacktrace()
 #{.passl: "tmp/libbacktrace.a".}
 {.passl: "-funwind-tables".}
 
-proc defError(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = raise newException(Exception,&"BACKTRACE ERROR: {msg}")
+proc defError(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = 
+  echo &"BACKTRACE ERROR: {msg}"
 
-echo "PATH ",getAppFilename()
+#echo "PATH ",getAppFilename()
 
 let backtrace_state = backtrace_create_state(getAppFilename().cstring,1,defError,nil)
 
 proc getBacktrace():string =
+  if backtrace_state==nil:
+    return "BACKTRACE ERROR: backtrace is not initialized"
   type Val = string
   var data:Val
   let dataptr = data.addr.pointer
