@@ -4,9 +4,10 @@
 
 import macros
 import os
+import strformat
 
 macro buildBacktrace() =
-  let files = @[
+  var files = @[
     "atomic.c",
     "dwarf.c",
     "fileline.c",
@@ -19,14 +20,34 @@ macro buildBacktrace() =
     "elf.c",
     "mmapio.c",
     "mmap.c",
-    "pecoff.c",
   ]
   result = newStmtList()
+  var cargs = "-I backtrace_utils"
+  block:
+    let list_64 = @["alpha", "powerpc64", "powerpc64el", "sparc", "amd64", "arm64", "mips64", "mips64el", "riscv64"]
+    let list_32 = @["i386", "powerpc", "mips", "mipsel", "arm"]
+    let arch = if list_64.contains hostCPU:
+      "64"
+    elif list_32.contains hostCPU:
+      "32"
+    else:
+      error(&"Unknown CPU: {hostCPU}")
+      ""
+    let ftype = case hostOS:
+      of "linux", "netbsd", "freebsd", "openbsd", "solaris", "aix": "elf"&arch
+      of "windows": "pecoff"
+      of "macosx": "macho"
+      else:
+        error(&"Unknown OS: {hostOS}")
+        ""
+    if ftype=="pecoff":
+      files.add "pecoff.c"
+    cargs.add &" -D BACKTRACE_ELF_SIZE={arch}"
   for file in files:
     let fpath = "lib/libbacktrace"/file
     let fpath_lit = newLit fpath
     echo "LIT ",fpath_lit.treeRepr
-    let c = newCall(ident "compile",fpath_lit,newLit "-I backtrace_utils")
+    let c = newCall(ident "compile",fpath_lit,newLit cargs)
     var p = newNimNode(nnkPragma,c)
     p.add c
     result.add p
