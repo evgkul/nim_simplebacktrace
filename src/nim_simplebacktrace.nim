@@ -7,6 +7,9 @@ import os
 import strformat
 import nim_simplebacktrace/backtrace_api
 
+{.passc:"-g3".}
+{.passl:"-g3".}
+
 macro buildBacktrace() =
   var files = @[
     "atomic.c",
@@ -51,12 +54,26 @@ macro buildBacktrace() =
     let c = newCall(ident "compile",fpath_lit,newLit cargs)
     var p = newNimNode(nnkPragma,c)
     p.add c
-    result.add p
+    #result.add p
   #echo "RES ",result.treeRepr
 
 buildBacktrace()
+{.passl: "tmp/libbacktrace.a".}
 
-let backtrace_state = backtrace_create_state(getAppFilename().cstring,1,proc(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = raise newException(Exception,&"BACKTRACE ERROR: {msg}"),nil)
+proc defError(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = raise newException(Exception,&"BACKTRACE ERROR: {msg}")
+
+echo "PATH ",getAppFilename()
+
+let backtrace_state = backtrace_create_state(getAppFilename().cstring,1,defError,nil)
+
+proc testbc() =
+  var data:seq[string]
+  let dataptr = data.addr.pointer
+  proc cb(data: pointer; pc: uintptr_t; filename: cstring; lineno: cint; function: cstring): cint  {.cdecl.} =
+    echo &"BACKTRACE: {function} in {filename}:{lineno}"
+  assert backtrace_state.backtrace_full(0,cb,defError,dataptr)==0
+  
+testbc()
 
 proc add*(x, y: int): int =
   ## Adds two files together.

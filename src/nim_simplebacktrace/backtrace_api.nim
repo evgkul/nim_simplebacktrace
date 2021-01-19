@@ -37,7 +37,7 @@ type
   backtrace_state* {.bycopy.} = object
 
 
-type uintptr_t = pointer
+type uintptr_t* = pointer
 
 ##  The type of the error callback argument to backtrace functions.
 ##    This function, if not NULL, will be called for certain error cases.
@@ -90,7 +90,7 @@ proc backtrace_create_state*(filename: cstring; threaded: cint;
 
 type
   backtrace_full_callback* = proc (data: pointer; pc: uintptr_t; filename: cstring;
-                                lineno: cint; function: cstring): cint  {.cdecl.}
+                                lineno: cint; function: cstring): cint {.cdecl.}
 
 ##  Get a full stack backtrace.  SKIP is the number of frames to skip;
 ##    passing 0 will start the trace with the function calling
