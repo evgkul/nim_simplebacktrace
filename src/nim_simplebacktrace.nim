@@ -22,7 +22,7 @@ macro buildBacktrace() =
     "mmap.c",
   ]
   result = newStmtList()
-  var cargs = "-I backtrace_utils"
+  var cargs = "-I backtrace_utils -D HAVE_SYNC_FUNCTIONS"
   block:
     let list_64 = @["alpha", "powerpc64", "powerpc64el", "sparc", "amd64", "arm64", "mips64", "mips64el", "riscv64"]
     let list_32 = @["i386", "powerpc", "mips", "mipsel", "arm"]
@@ -46,14 +46,20 @@ macro buildBacktrace() =
   for file in files:
     let fpath = "lib/libbacktrace"/file
     let fpath_lit = newLit fpath
-    echo "LIT ",fpath_lit.treeRepr
+    #echo "LIT ",fpath_lit.treeRepr
     let c = newCall(ident "compile",fpath_lit,newLit cargs)
     var p = newNimNode(nnkPragma,c)
     p.add c
     result.add p
-  echo "RES ",result.treeRepr
+  #echo "RES ",result.treeRepr
 
 buildBacktrace()
+
+type BacktraceState* = distinct pointer
+type backtrace_error_callback = proc(data:pointer,msg:cstring,errnum:cint):void {.cdecl.}
+proc backtrace_create_state(filename:cstring,threaded:cint,error_callback:backtrace_error_callback,data:pointer):BacktraceState {.importc.}
+
+let backtrace_state = backtrace_create_state(getAppFilename().cstring,1,proc(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = raise newException(Exception,&"BACKTRACE ERROR: {msg}"),nil)
 
 proc add*(x, y: int): int =
   ## Adds two files together.
