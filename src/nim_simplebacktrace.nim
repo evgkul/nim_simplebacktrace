@@ -73,10 +73,10 @@ proc testbc() =
   let dataptr = data.addr.pointer
   proc cb(data: pointer; pc: uintptr_t; filename: cstring; lineno: cint; function: cstring): cint  {.cdecl.} =
     echo &"BACKTRACE: {function} in {filename}:{lineno}"
-  assert backtrace_state.backtrace_full(0,cb,defError,dataptr)==0
+  assert backtrace_state.backtrace_full(1,cb,defError,dataptr)==0
   
-testbc()
 
 proc add*(x, y: int): int =
   ## Adds two files together.
+  testbc()
   return x + y
