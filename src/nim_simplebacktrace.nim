@@ -26,7 +26,7 @@ macro buildBacktrace() =
     "mmap.c",
   ]
   result = newStmtList()
-  var cargs = "-I backtrace_utils -D HAVE_SYNC_FUNCTIONS"
+  var cargs = "-I backtrace_utils -DHAVE_CONFIG_H -I. -funwind-tables"
   block:
     let list_64 = @["alpha", "powerpc64", "powerpc64el", "sparc", "amd64", "arm64", "mips64", "mips64el", "riscv64"]
     let list_32 = @["i386", "powerpc", "mips", "mipsel", "arm"]
@@ -47,6 +47,7 @@ macro buildBacktrace() =
     if ftype=="pecoff":
       files.add "pecoff.c"
     cargs.add &" -D BACKTRACE_ELF_SIZE={arch}"
+    cargs.add &" -D BACKTRACE_XCOFF_SIZE={arch}"
   for file in files:
     let fpath = "lib/libbacktrace"/file
     let fpath_lit = newLit fpath
@@ -54,11 +55,12 @@ macro buildBacktrace() =
     let c = newCall(ident "compile",fpath_lit,newLit cargs)
     var p = newNimNode(nnkPragma,c)
     p.add c
-    #result.add p
+    result.add p
   #echo "RES ",result.treeRepr
 
 buildBacktrace()
-{.passl: "tmp/libbacktrace.a".}
+#{.passl: "tmp/libbacktrace.a".}
+{.passl: "-funwind-tables".}
 
 proc defError(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = raise newException(Exception,&"BACKTRACE ERROR: {msg}")
 
