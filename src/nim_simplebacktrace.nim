@@ -56,10 +56,6 @@ macro buildBacktrace() =
 
 buildBacktrace()
 
-type BacktraceState* = distinct pointer
-type backtrace_error_callback = proc(data:pointer,msg:cstring,errnum:cint):void {.cdecl.}
-proc backtrace_create_state(filename:cstring,threaded:cint,error_callback:backtrace_error_callback,data:pointer):BacktraceState {.importc.}
-
 let backtrace_state = backtrace_create_state(getAppFilename().cstring,1,proc(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = raise newException(Exception,&"BACKTRACE ERROR: {msg}"),nil)
 
 proc add*(x, y: int): int =
