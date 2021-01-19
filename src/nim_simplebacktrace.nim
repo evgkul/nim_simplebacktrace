@@ -5,6 +5,7 @@
 import macros
 import os
 import strformat
+import strutils
 import nim_simplebacktrace/backtrace_api
 
 {.passc:"-g3".}
@@ -68,15 +69,22 @@ echo "PATH ",getAppFilename()
 
 let backtrace_state = backtrace_create_state(getAppFilename().cstring,1,defError,nil)
 
-proc testbc() =
-  var data:seq[string]
+proc getBacktrace():string =
+  type Val = string
+  var data:Val
   let dataptr = data.addr.pointer
   proc cb(data: pointer; pc: uintptr_t; filename: cstring; lineno: cint; function: cstring): cint  {.cdecl.} =
-    echo &"BACKTRACE: {function} in {filename}:{lineno}"
-  assert backtrace_state.backtrace_full(1,cb,defError,dataptr)==0
+    let data = cast[ptr Val](data)
+    if filename.len>0 or function.len>0:
+      data[].add &"{filename}({lineno}) {function}\n"
+  proc e(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = 
+    let data = cast[ptr Val](data)
+    data[].add &"BACKTRACE ERROR {errnum}: {msg}"
+  assert backtrace_state.backtrace_full(1,cb,e,dataptr)==0
+  return data
   
 
 proc add*(x, y: int): int =
   ## Adds two files together.
-  testbc()
+  echo getBacktrace()
   return x + y
