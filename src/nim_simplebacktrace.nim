@@ -81,13 +81,13 @@ proc getBacktrace():string =
   type Val = string
   var data:Val
   let dataptr = data.addr.pointer
-  proc cb(data: pointer; pc: uintptr_t; filename: cstring; lineno: cint; function: cstring): cint  {.cdecl.} =
+  proc cb(data: pointer; pc: cuintptr_t; filename: cstring; lineno: cint; function: cstring): cint  {.cdecl.} =
     let data = cast[ptr Val](data)
     if filename.len>0 or function.len>0:
       data[].add &"{filename}({lineno}) {function}\n"
   proc e(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = 
     let data = cast[ptr Val](data)
-    data[].add &"BACKTRACE ERROR {errnum}: {msg}"
+    data[].add &"BACKTRACE ERROR {errnum}: {msg}\n"
   assert backtrace_state.backtrace_full(1,cb,e,dataptr)==0
   return data
   

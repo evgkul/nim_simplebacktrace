@@ -33,11 +33,16 @@
 ##  The backtrace state.  This struct is intentionally not defined in
 ##    the public interface.
 
+
+import system/stacktraces
+
+when not compiles(cuintptr_t):
+  type
+    cuintptr_t {.importc: "uintptr_t", nodecl.} = uint
+
 type
   backtrace_state* {.bycopy.} = object
 
-
-type uintptr_t* = pointer
 
 ##  The type of the error callback argument to backtrace functions.
 ##    This function, if not NULL, will be called for certain error cases.
@@ -89,7 +94,7 @@ proc backtrace_create_state*(filename: cstring; threaded: cint;
 ##    invalid after this function returns.
 
 type
-  backtrace_full_callback* = proc (data: pointer; pc: uintptr_t; filename: cstring;
+  backtrace_full_callback* = proc (data: pointer; pc: cuintptr_t; filename: cstring;
                                 lineno: cint; function: cstring): cint {.cdecl.}
 
 ##  Get a full stack backtrace.  SKIP is the number of frames to skip;
@@ -110,7 +115,7 @@ proc backtrace_full*(state: ptr backtrace_state; skip: cint;
 ##    counter.  This should return 0 to continue tracing.
 
 type
-  backtrace_simple_callback* = proc (data: pointer; pc: uintptr_t): cint  {.cdecl.}
+  backtrace_simple_callback* = proc (data: pointer; pc: cuintptr_t): cint  {.cdecl.}
 
 ##  Get a simple backtrace.  SKIP is the number of frames to skip, as
 ##    in backtrace.  DATA is passed to the callback routine.  If any call
@@ -138,7 +143,7 @@ proc backtrace_print*(state: ptr backtrace_state; skip: cint; a3: ptr FILE) {.im
 ##    at least one call to either CALLBACK or ERROR_CALLBACK.  This
 ##    returns the first non-zero value returned by CALLBACK, or 0.
 
-proc backtrace_pcinfo*(state: ptr backtrace_state; pc: uintptr_t;
+proc backtrace_pcinfo*(state: ptr backtrace_state; pc: cuintptr_t;
                       callback: backtrace_full_callback;
                       error_callback: backtrace_error_callback; data: pointer): cint {.importc.}
 ##  The type of the callback argument to backtrace_syminfo.  DATA and
@@ -148,8 +153,8 @@ proc backtrace_pcinfo*(state: ptr backtrace_state; pc: uintptr_t;
 ##    if no error occurred but the symbol could not be found.
 
 type
-  backtrace_syminfo_callback* = proc (data: pointer; pc: uintptr_t; symname: cstring;
-                                   symval: uintptr_t; symsize: uintptr_t) {.cdecl.}
+  backtrace_syminfo_callback* = proc (data: pointer; pc: cuintptr_t; symname: cstring;
+                                   symval: cuintptr_t; symsize: cuintptr_t) {.cdecl.}
 
 ##  Given ADDR, an address or program counter in the current program,
 ##    call the callback information with the symbol name and value
@@ -161,6 +166,8 @@ type
 ##    table, CALLBACK will be called with a NULL SYMNAME argument.
 ##    Returns 1 on success, 0 on error.
 
-proc backtrace_syminfo*(state: ptr backtrace_state; `addr`: uintptr_t;
+proc backtrace_syminfo*(state: ptr backtrace_state; `addr`: cuintptr_t;
                        callback: backtrace_syminfo_callback;
                        error_callback: backtrace_error_callback; data: pointer): cint {.importc.}
+
+export cuintptr_t
