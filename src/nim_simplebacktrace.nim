@@ -70,7 +70,7 @@ buildBacktrace()
 {.passl: "-funwind-tables".}
 
 proc defError(data:pointer,msg:cstring,errnum:cint):void {.cdecl.} = 
-  echo &"BACKTRACE ERROR: {msg}"
+  echo &"BACKTRACE ERROR {errnum}: {msg}"
 
 #echo "PATH ",getAppFilename()
 
