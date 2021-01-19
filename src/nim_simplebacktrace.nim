@@ -5,6 +5,7 @@
 import macros
 import os
 import strformat
+import nim_simplebacktrace/backtrace_api
 
 macro buildBacktrace() =
   var files = @[
