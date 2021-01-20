@@ -15,7 +15,8 @@ import system/stacktraces
 template getPrefix():string =
   instantiationInfo(fullPaths=true).filename.splitFile.dir/"nim_simplebacktrace"
 const prefix = getPrefix()
-
+const OVERRIDE_BACKTRACE_SIZE {.strdefine.} = ""
+const OVERRIDE_BACKTRACE_OS {.strdefine.} = ""
 macro buildBacktrace() =
   var files = @[
     "atomic.c",
@@ -37,20 +38,25 @@ macro buildBacktrace() =
   block:
     let list_64 = @["alpha", "powerpc64", "powerpc64el", "sparc", "amd64", "arm64", "mips64", "mips64el", "riscv64"]
     let list_32 = @["i386", "powerpc", "mips", "mipsel", "arm"]
-    let arch = if list_64.contains hostCPU:
+    let arch = if OVERRIDE_BACKTRACE_SIZE!="":
+      OVERRIDE_BACKTRACE_SIZE
+    elif list_64.contains hostCPU:
       "64"
     elif list_32.contains hostCPU:
       "32"
     else:
       error(&"Unknown CPU: {hostCPU}")
       ""
-    let ftype = case hostOS:
+    let ftype = if OVERRIDE_BACKTRACE_OS!="":
+      OVERRIDE_BACKTRACE_OS
+    else:
+      case hostOS:
       of "linux", "netbsd", "freebsd", "openbsd", "solaris", "aix": "elf"&arch
       of "windows": "pecoff"
       of "macosx": "macho"
       else:
-        error(&"Unknown OS: {hostOS}")
-        ""
+        #error(&"Unknown OS: {hostOS}")
+        "unknown"
     if ftype=="pecoff":
       files.add "pecoff.c"
     cargs.add &" -D BACKTRACE_ELF_SIZE={arch}"
@@ -144,13 +150,3 @@ when defined nimStackTraceOverride:
   registerStackTraceOverrideGetProgramCounters getProgramCounters
   registerStackTraceOverrideGetDebuggingInfo getDebuggingInfoProc
 
-proc add*(x, y: int): int =
-  ## Adds two files together.
-  #echo getBacktrace()
-  proc tproc() =
-    raise newException(Exception,"Test")
-  try:
-    tproc()
-  except Exception as e:
-    echo "STRACE ",e.getStackTrace()
-  return x + y

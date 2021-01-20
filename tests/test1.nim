@@ -8,5 +8,18 @@
 import unittest
 
 import nim_simplebacktrace
+
+proc tfun*(x, y: int): int =
+  ## Adds two files together.
+  #echo getBacktrace()
+  proc tproc() =
+    raise newException(Exception,"Test")
+  try:
+    tproc()
+  except Exception as e:
+    echo "STRACE ",e.getStackTrace()
+  return x + y
+
+
 test "can add":
-  check add(5, 5) == 10
+  check tfun(5, 5) == 10
