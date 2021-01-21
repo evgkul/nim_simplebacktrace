@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "0.1.1"
 author        = "evgkul"
 description   = "A simple bindings for libbacktrace for nim. Based on https://github.com/status-im/nim-libbacktrace"
 license       = "MIT"

@@ -28,7 +28,7 @@
 #define HAVE_DL_ITERATE_PHDR 1
 
 /* Define to 1 if you have the fcntl function */
-#define HAVE_FCNTL 1
+//#define HAVE_FCNTL 1
 
 /* Define if getexecname is available. */
 /* #undef HAVE_GETEXECNAME */

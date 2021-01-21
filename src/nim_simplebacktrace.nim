@@ -13,7 +13,7 @@ import system/stacktraces
 {.passl:"-g3".}
 
 template getPrefix():string =
-  instantiationInfo(fullPaths=true).filename.splitFile.dir/"nim_simplebacktrace"
+  instantiationInfo(fullPaths=true).filename.splitFile.dir&"/"&"nim_simplebacktrace"
 const prefix = getPrefix()
 const OVERRIDE_BACKTRACE_SIZE {.strdefine.} = ""
 const OVERRIDE_BACKTRACE_OS {.strdefine.} = ""
@@ -28,12 +28,10 @@ macro buildBacktrace() =
     "state.c",
     "backtrace.c",
     "simple.c",
-    "elf.c",
-    "mmapio.c",
-    "mmap.c",
+    #"elf.c",
   ]
   result = newStmtList()
-  let includes = prefix/"backtrace_utils"
+  let includes = prefix&"/"&"backtrace_utils"
   var cargs = &"-I {includes} -DHAVE_CONFIG_H -I. -funwind-tables"
   block:
     let list_64 = @["alpha", "powerpc64", "powerpc64el", "sparc", "amd64", "arm64", "mips64", "mips64el", "riscv64"]
@@ -59,10 +57,18 @@ macro buildBacktrace() =
         "unknown"
     if ftype=="pecoff":
       files.add "pecoff.c"
+      files.add "alloc.c"
+      files.add "read.c"
+    else:
+      files.add "elf.c"
+      #files.add "posix.c"
+      files.add "mmap.c"
+      files.add "mmapio.c"
+      cargs.add " -D HAVE_FCNTL=1"
     cargs.add &" -D BACKTRACE_ELF_SIZE={arch}"
     cargs.add &" -D BACKTRACE_XCOFF_SIZE={arch}"
   for file in files:
-    let fpath = prefix/"libbacktrace"/file
+    let fpath = prefix&"/"&"libbacktrace"&"/"&file
     let fpath_lit = newLit fpath
     #echo "LIT ",fpath_lit.treeRepr
     let c = newCall(ident "compile",fpath_lit,newLit cargs)
